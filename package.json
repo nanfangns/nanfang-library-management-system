@@ -2,6 +2,7 @@
   "name": "nanfang-library-management-system",
   "version": "0.1.0",
   "private": true,
+  "description": "Nanfang 图书管理系统，适合作为 Next.js 图书管理系统、毕业设计、课程设计与课程作业参考。",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
