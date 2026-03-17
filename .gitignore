@@ -1,0 +1,9 @@
+node_modules
+_node_modules_old
+.next
+out
+coverage
+*.log
+.env
+data
+.claude
