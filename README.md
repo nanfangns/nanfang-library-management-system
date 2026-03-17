@@ -1,6 +1,6 @@
-# 图书管理系统
+# Nanfang 图书管理系统
 
-一个基于 `Next.js 16`、`React 19` 和 `Node 24 SQLite` 的图书管理系统，采用清晰的多页面结构：欢迎首页、图书列表页、导入页、新增页和编辑页各司其职。
+一个基于 `Next.js 16`、`React 19` 和 `Node 24 SQLite` 的现代图书管理系统，采用清晰的多页面结构：欢迎首页、图书列表页、导入页、新增页和编辑页各司其职。
 
 ## 功能
 
@@ -32,7 +32,7 @@
 ## 环境变量
 
 ```bash
-OPEN_LIBRARY_APP_NAME="vibecoding-testcrud"
+OPEN_LIBRARY_APP_NAME="nanfang-library-management-system"
 OPEN_LIBRARY_CONTACT_EMAIL=""
 ```
 

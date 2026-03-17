@@ -51,7 +51,7 @@ export function SiteHeader() {
           <span className="site-brand__icon">
             <LibraryBig size={18} />
           </span>
-          <span>图书管理系统</span>
+          <span>Nanfang 图书管理系统</span>
         </Link>
 
         <nav className="site-nav" aria-label="主导航">

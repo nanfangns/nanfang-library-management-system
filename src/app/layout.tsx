@@ -11,8 +11,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "图书管理系统",
-  description: "基于 Next.js 与 SQLite 构建的现代化图书管理系统。",
+  title: "Nanfang 图书管理系统",
+  description: "基于 Next.js 与 SQLite 构建的现代化馆藏管理系统。",
 };
 
 export default function RootLayout({

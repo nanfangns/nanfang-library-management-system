@@ -224,7 +224,8 @@ function extractYear(value: unknown) {
 }
 
 function getOpenLibraryHeaders() {
-  const appName = cleanText(process.env.OPEN_LIBRARY_APP_NAME, 40) || "vibecoding-testcrud";
+  const appName =
+    cleanText(process.env.OPEN_LIBRARY_APP_NAME, 40) || "nanfang-library-management-system";
   const contactEmail = cleanText(process.env.OPEN_LIBRARY_CONTACT_EMAIL, 80);
   const userAgent = contactEmail
     ? `${appName} (${contactEmail})`
