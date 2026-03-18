@@ -1,20 +1,25 @@
-# Vercel + Turso 閮ㄧ讲璇存槑
+# Vercel + Turso 部署说明
 
-杩欎釜椤圭洰宸茬粡瀹屾垚浜?`SQLite 鏈湴寮€鍙?+ Turso 绾夸笂婕旂ず` 鐨勫弻搴撻€傞厤锛岄€傚悎鏈湴缁х画鐢ㄦ枃浠舵暟鎹簱寮€鍙戯紝鍚屾椂鎶婄嚎涓婄増鏈儴缃插埌 Vercel銆?
-## 1. 鍑嗗 Turso 鏁版嵁搴?
-鍏堝湪 Turso 鍒涘缓涓€涓暟鎹簱锛屽苟鎷垮埌涓ら」閰嶇疆锛?
+这个项目已经完成了 `SQLite 本地开发 + Turso 线上部署` 的双库适配，适合本地继续使用文件数据库开发，同时把线上版本部署到 Vercel。
+
+## 1. 准备 Turso 数据库
+
+先在 Turso 创建一个数据库，并拿到这两项配置：
+
 - `DATABASE_URL`
 - `DATABASE_AUTH_TOKEN`
 
-绀轰緥锛?
+示例：
+
 ```bash
 DATABASE_URL="libsql://your-db-name-your-org.turso.io"
 DATABASE_AUTH_TOKEN="..."
 ```
 
-## 2. 鍦?Vercel 閰嶇疆鐜鍙橀噺
+## 2. 在 Vercel 配置环境变量
 
-鑷冲皯閰嶇疆涓嬮潰杩欎簺锛?
+至少配置下面这些：
+
 ```bash
 NEXT_PUBLIC_APP_URL="https://your-project.vercel.app"
 DATABASE_DRIVER="turso"
@@ -24,13 +29,15 @@ OPEN_LIBRARY_APP_NAME="nanfang-library-management-system"
 OPEN_LIBRARY_CONTACT_EMAIL="your-email@example.com"
 ```
 
-濡傛灉浣犲彧鏄湰鍦板紑鍙戯紝鍙互缁х画鐢ㄩ粯璁ょ殑锛?
+如果你只是本地开发，可以继续用默认配置：
+
 ```bash
 DATABASE_DRIVER="sqlite"
 ```
 
-## 3. 棣栨閮ㄧ讲鍚庡啓鍏ユ紨绀烘暟鎹?
-鍦ㄦ湰鍦?PowerShell 閲屼复鏃跺垏鍒?Turso 閰嶇疆锛岀劧鍚庢墽琛岄噸缃剼鏈細
+## 3. 首次部署后写入演示数据
+
+在本地 PowerShell 里临时切到 Turso 配置，然后执行重置脚本：
 
 ```powershell
 $env:DATABASE_DRIVER="turso"
@@ -39,25 +46,31 @@ $env:DATABASE_AUTH_TOKEN="your-token"
 npm run db:reset
 ```
 
-杩欎釜鑴氭湰浼氾細
+这个脚本会：
 
-- 娓呯┖鐜版湁鍥句功鏁版嵁
-- 閲嶆柊鍐欏叆绀轰緥棣嗚棌
+- 清空现有图书数据
+- 重新写入示例馆藏
 
-閫傚悎棣栨閮ㄧ讲鍜屽悗缁€滄紨绀虹幆澧冩暟鎹噸缃€濄€?
-## 4. Vercel 閮ㄧ讲寤鸿
+适合首次部署和后续“演示环境数据重置”。
 
-- 寤鸿鐩存帴浠?GitHub 浠撳簱瀵煎叆鍒?Vercel
-- 閮ㄧ讲瀹屾垚鍚庯紝鎶?GitHub 浠撳簱鐨?`homepage` 鏇存柊鎴愪綘鐨?Vercel 鍩熷悕
-- 濡傛灉浣犺鍏紑婕旂ず锛孯EADME 閲屽彲浠ユ槑纭爣娉ㄢ€滄紨绀烘暟鎹細瀹氭湡閲嶇疆鈥?
-## 5. 鏈湴涓庣嚎涓婄殑鍖哄埆
+## 4. Vercel 部署建议
 
-- 鏈湴锛氶粯璁や娇鐢?`data/library.db`
-- 绾夸笂锛氫娇鐢?`Turso`
-- 椤甸潰銆丼erver Actions銆佹牎楠岄€昏緫鍜岃〃缁撴瀯淇濇寔涓€鑷?
-## 6. 甯歌闂
+- 建议直接从 GitHub 仓库导入到 Vercel
+- 部署完成后，把 GitHub 仓库的 `homepage` 更新成你的 Vercel 域名
+- 如果你要公开演示，可以在 README 里明确标注“演示数据会定期重置”
 
-### 涓轰粈涔堟湰鍦拌繕淇濈暀 SQLite锛?
-鍥犱负鏈湴寮€鍙戝拰姣曡婕旂ず鏃讹紝SQLite 渚濈劧鏄渶杞婚噺銆佹渶瀹规槗璺戣捣鏉ョ殑鏂规銆?
-### 涓轰粈涔堢嚎涓婁笉缁х画鐢ㄦ湰鍦?SQLite 鏂囦欢锛?
-鍥犱负 Vercel 鐨勮繍琛岀幆澧冧笉閫傚悎鎸佷箙鍖栨湰鍦版枃浠跺啓鍏ワ紝鎹㈡垚 Turso 浠ュ悗鏇寸ǔ瀹氾紝涔熸洿閫傚悎鍏紑婕旂ず銆?
+## 5. 本地与线上的区别
+
+- 本地：默认使用 `data/library.db`
+- 线上：使用 `Turso`
+- 页面、Server Actions、校验逻辑和表结构保持一致
+
+## 6. 常见问题
+
+### 为什么本地还保留 SQLite？
+
+因为它最适合本地开发、课程作业和毕设演示，开箱即跑，迁移成本也低。
+
+### 为什么线上不继续用本地 SQLite 文件？
+
+因为 Vercel 不适合长期持久化本地文件写入，换成 Turso 以后更稳定，也更适合公开演示。
