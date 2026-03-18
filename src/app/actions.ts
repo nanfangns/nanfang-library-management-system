@@ -69,7 +69,7 @@ export async function saveBookAction(
   const { id, summary, ...data } = parsed.data;
 
   try {
-    saveBook({
+    await saveBook({
       id,
       ...data,
       summary: summary || null,
@@ -106,7 +106,7 @@ export async function deleteBookAction(formData: FormData) {
     return;
   }
 
-  deleteBook(id);
+  await deleteBook(id);
 
   revalidatePath("/books");
   redirect("/books?notice=deleted");
@@ -149,12 +149,12 @@ export async function quickImportExternalBookAction(formData: FormData) {
     redirect(appendQueryParam(redirectTo, "feedback", "incomplete"));
   }
 
-  if (getBookByIsbn(importInput.isbn)) {
+  if (await getBookByIsbn(importInput.isbn)) {
     redirect(appendQueryParam(redirectTo, "feedback", "duplicate"));
   }
 
   try {
-    saveBook(importInput);
+    await saveBook(importInput);
   } catch (error) {
     if (error instanceof DuplicateIsbnError) {
       redirect(appendQueryParam(redirectTo, "feedback", "duplicate"));

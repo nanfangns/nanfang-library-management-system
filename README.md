@@ -1,58 +1,115 @@
 # Nanfang 图书管理系统
 
-一个基于 `Next.js 16`、`React 19` 和 `Node 24 SQLite` 的现代图书管理系统，采用清晰的多页面结构：欢迎首页、图书列表页、导入页、新增页和编辑页各司其职。
+> 一个适合作为 `图书管理系统`、`Next.js 后台项目`、`毕业设计`、`毕设`、`课程设计`、`课程作业` 参考的中文开源项目。
 
-适合作为 `Next.js 图书管理系统`、`毕业设计`、`毕设项目`、`课程设计`、`课程作业`、`Web 作业`、`数据库作业` 的参考示例。
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)](https://react.dev/)
+[![SQLite](https://img.shields.io/badge/SQLite-Local-0f6cbd?style=flat-square)](https://www.sqlite.org/)
+[![Turso](https://img.shields.io/badge/Turso-Vercel%20Ready-7c3aed?style=flat-square)](https://turso.tech/)
+[![License](https://img.shields.io/badge/License-MIT-16a34a?style=flat-square)](./LICENSE)
 
-## 功能
+仓库已经完成 `SQLite 本地开发 + Turso 线上部署` 的双库适配，适合本地快速运行，也适合后续挂到 Vercel 做公开演示。
 
-- 图书 CRUD：新增、编辑、删除、列表展示
-- 搜索与筛选：支持按书名、作者、ISBN、分类检索，并按状态过滤
-- 外部数据补全：支持通过 `Open Library` 搜索关键词或 ISBN，并导入到表单或一键入库
-- 元数据扩展：支持维护出版社、语言、页数、封面地址
-- 独立页面结构：首页、图书列表、导入图书、新增图书、编辑图书分开组织
-- 响应式界面：桌面端和移动端都可正常使用
-- 本地持久化：数据保存在 `data/library.db`
+快速入口：
 
-## 技术栈
+- [项目截图](#页面预览)
+- [本地启动](#本地启动)
+- [部署说明](./docs/vercel-turso.md)
+- [Vercel 一键部署](https://vercel.com/new/clone?repository-url=https://github.com/nanfangns/nanfang-library-management-system)
+
+## 项目简介
+
+这是一个围绕馆藏录入、资料维护、检索筛选和外部书目补全构建的现代化图书管理系统。
+
+它不是那种把所有功能堆在一个页面里的练手 Demo，而是拆成了更清晰的业务页面：
+
+- `/` 欢迎首页
+- `/books` 图书列表页
+- `/books/import` 外部图书导入页
+- `/books/new` 新增图书页
+- `/books/[id]/edit` 编辑图书页
+
+如果你想找的是：
+
+- `Next.js 图书管理系统`
+- `React 后台管理系统`
+- `毕业设计 / 毕设项目`
+- `课程设计 / 课程作业`
+- `CRUD 管理系统源码`
+
+这个仓库会比普通“表单 + 表格”的示例更完整一些。
+
+## 页面预览
+
+### 首页与导航
+
+![首页预览](./public/previews/home-hero.png)
+
+### 图书列表与搜索筛选
+
+![图书列表预览](./public/previews/catalog-overview.png)
+
+### 外部导入与补全入口
+
+![导入图书预览](./public/previews/import-workflow.png)
+
+### 录入流程与业务表单
+
+![新增图书预览](./public/previews/new-book-workflow.png)
+
+### 项目动图
+
+![项目动图预览](./public/previews/flow-demo.gif)
+
+## 功能亮点
+
+- 清晰页面结构：首页、列表、导入、新增、编辑各归各位
+- 本地响应快：默认直接使用 SQLite 文件数据库
+- 外部书目补全：接入 Open Library 搜索与预填
+- 现代界面：偏 Google 风格的明亮配色与卡片布局
+- 搜索体验优化：局部加载反馈，不再整页闪烁
+- 移动端可用：导航和主内容已经针对小屏做过调整
+- 适合二开：类型、校验、数据访问和页面职责相对清晰
+
+## 适合谁用
+
+- 想做 `毕业设计 / 毕设` 的同学
+- 想交 `课程设计 / 课程作业 / Web 作业 / 数据库作业` 的同学
+- 想找一个完整一点的 `Next.js CRUD 后台项目` 做参考的人
+- 想做图书馆、馆藏、书目管理类原型系统的人
+
+## 技术架构
 
 - `Next.js 16` App Router
 - `React 19`
 - `TypeScript`
 - `Zod` 表单校验
-- `node:sqlite` 本地数据库
-- `Open Library API` 外部书目补全
-- `lucide-react` 图标
+- `SQLite` 本地开发数据库
+- `Turso` 线上演示数据库
+- `Open Library API` 外部图书补全
+- `Server Actions` 提交与跳转
 
-## 环境要求
+## 本地启动
 
-- `Node.js 24` 或更高版本
-- `npm 11` 或更高版本
-
-项目使用的是 Node 内置的 `node:sqlite`。第一次运行脚本时，终端可能会看到 SQLite 的 ExperimentalWarning，这是 Node 24 当前的正常提示，不影响使用。
-
-## 环境变量
-
-```bash
-OPEN_LIBRARY_APP_NAME="nanfang-library-management-system"
-OPEN_LIBRARY_CONTACT_EMAIL=""
-```
-
-说明：
-
-- 这两个变量是可选的，用于给 Open Library 请求附带可识别的 `User-Agent`
-- 项目当前不使用 `DATABASE_URL`
-- SQLite 文件固定保存在 `data/library.db`
-
-## 快速开始
+### 1. 安装依赖
 
 ```bash
 npm install
+```
+
+### 2. 初始化示例数据
+
+```bash
 npm run db:seed
+```
+
+### 3. 启动开发服务器
+
+```bash
 npm run dev
 ```
 
-启动后访问：
+默认访问：
 
 ```text
 http://localhost:3000
@@ -67,60 +124,67 @@ npm run start
 npm run lint
 npm run db:init
 npm run db:seed
+npm run db:reset
+npm run assets:preview
+```
+
+## 部署说明
+
+如果你要做公开演示，推荐使用：
+
+- Vercel 托管前端与 Next.js 服务
+- Turso 承载线上数据库
+
+详细步骤见：
+
+- [Vercel + Turso 部署说明](./docs/vercel-turso.md)
+
+## 环境变量
+
+```bash
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+DATABASE_DRIVER="sqlite"
+DATABASE_URL=""
+DATABASE_AUTH_TOKEN=""
+OPEN_LIBRARY_APP_NAME="nanfang-library-management-system"
+OPEN_LIBRARY_CONTACT_EMAIL=""
 ```
 
 说明：
 
-- `db:init`：初始化 SQLite 文件并输出当前图书数量
-- `db:seed`：写入示例图书数据，使用 `INSERT OR IGNORE`，重复执行不会重复插入相同 ISBN
+- 本地默认使用 SQLite，所以 `DATABASE_DRIVER` 保持 `sqlite` 即可
+- 部署到 Vercel 时把 `DATABASE_DRIVER` 改成 `turso`
+- `DATABASE_URL` 与 `DATABASE_AUTH_TOKEN` 仅在 Turso 模式下必填
 
-## 目录结构
+## 常见问题
 
-```text
-src/
-  app/
-    actions.ts      # Server Actions
-    page.tsx        # 欢迎首页
-    books/          # 图书列表、导入、新增、编辑页面
-    globals.css     # 全局样式
-  components/
-    book-form.tsx   # 共享图书表单
-    book-card.tsx
-    external-book-card.tsx
-    site-header.tsx
-    delete-button.tsx
-    status-badge.tsx
-  lib/
-    database.ts     # SQLite 数据访问层
-    books.ts        # 校验与状态配置
-    external-books.ts
-    import-draft.ts
-    types.ts        # 共享类型
-scripts/
-  init-db.ts
-  seed-db.ts
-data/
-  library.db        # 本地数据库文件
-```
+### 1. 为什么本地还是 SQLite？
 
-## 验证
+因为它最适合本地开发、课程作业和毕设答辩演示，开箱即跑，迁移成本也低。
 
-当前项目已经通过以下检查：
+### 2. 为什么线上要换 Turso？
 
-```bash
-npm run db:seed
-npm run lint
-npm run build
-```
+因为 Vercel 不适合长期持久化本地 SQLite 文件，把线上切到 Turso 会更稳。
 
-## 页面入口
+### 3. 这个项目适合拿去做毕设吗？
 
-- `/`：欢迎首页
-- `/books`：图书列表、搜索、筛选、删除
-- `/books/import`：外部图书搜索与导入
-- `/books/new`：手动录入与快速补全
-- `/books/[id]/edit`：编辑现有馆藏记录
+适合。它已经覆盖了：
 
-## 备注
+- 多页面业务结构
+- 表单校验
+- 本地数据库 CRUD
+- 外部 API 接入
+- 响应式界面
+- 可部署方案
 
-仓库里如果看到 `_node_modules_old`，那是安装过程中残留的旧目录占位名，不参与项目运行，也已经被 `.gitignore` 忽略。
+如果你还要继续扩展，很适合往这些方向加：
+
+- 登录与权限
+- 借阅流程
+- 图书详情页
+- 统计看板
+- 批量导入导出
+
+### 4. 为什么 README 顶部没有直接挂一个公开演示域名？
+
+仓库已经完成了部署适配，但公开演示域名需要你自己的 Vercel/Turso 账号授权后再发布。部署文档已经写好，接上就能用。

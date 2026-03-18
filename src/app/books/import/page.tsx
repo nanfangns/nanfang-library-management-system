@@ -35,7 +35,7 @@ export default async function ImportBooksPage({ searchParams }: ImportBooksPageP
     }
   }
 
-  const existingBooks = getBooksByIsbns(results.map((candidate) => candidate.isbn));
+  const existingBooks = await getBooksByIsbns(results.map((candidate) => candidate.isbn));
 
   return (
     <main className="page-shell">
@@ -43,7 +43,9 @@ export default async function ImportBooksPage({ searchParams }: ImportBooksPageP
         <div>
           <p className="eyebrow">外部导入</p>
           <h1 className="page-title">导入图书</h1>
-          <p className="page-description">从 Open Library 检索公开图书资料，补全后再落到本地馆藏。</p>
+          <p className="page-description">
+            从 Open Library 检索公开图书资料，补全后再落到本地馆藏。
+          </p>
         </div>
 
         <div className="page-top__actions">

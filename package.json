@@ -3,15 +3,29 @@
   "version": "0.1.0",
   "private": true,
   "description": "Nanfang 图书管理系统，适合作为 Next.js 图书管理系统、毕业设计、课程设计与课程作业参考。",
+  "keywords": [
+    "图书管理系统",
+    "nextjs",
+    "毕业设计",
+    "毕设",
+    "课程设计",
+    "课程作业",
+    "crud",
+    "sqlite",
+    "turso"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "db:init": "tsx scripts/init-db.ts",
-    "db:seed": "tsx scripts/seed-db.ts"
+    "db:seed": "tsx scripts/seed-db.ts",
+    "db:reset": "tsx scripts/reset-db.ts",
+    "assets:preview": "tsx scripts/generate-previews.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "lucide-react": "^0.577.0",
     "next": "^16.1.7",
     "react": "^19.2.4",
@@ -24,6 +38,9 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.1.7",
+    "gifenc": "^1.0.3",
+    "playwright": "^1.58.2",
+    "pngjs": "^7.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

@@ -17,7 +17,7 @@ type EditBookPageProps = {
 
 export default async function EditBookPage({ params }: EditBookPageProps) {
   const { id } = await params;
-  const book = getBookById(id);
+  const book = await getBookById(id);
 
   if (!book) {
     notFound();
@@ -114,7 +114,9 @@ export default async function EditBookPage({ params }: EditBookPageProps) {
               <AlertTriangle size={18} />
               <h2>危险操作</h2>
             </div>
-            <p className="section-copy">删除后不会保留历史记录，请在确认不再需要时再执行。</p>
+            <p className="section-copy">
+              删除后不会保留历史记录，请在确认不再需要时再执行。
+            </p>
 
             <form action={deleteBookAction} className="danger-panel__form">
               <input name="id" type="hidden" value={book.id} />

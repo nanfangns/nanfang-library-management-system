@@ -29,7 +29,7 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
   const rawStatus = getSearchValue(resolvedSearchParams.status);
   const notice = getNoticeMessage(getSearchValue(resolvedSearchParams.notice));
   const statusFilter: StatusFilter = rawStatus && isBookStatus(rawStatus) ? rawStatus : "ALL";
-  const books = getCatalogBooks(query, statusFilter);
+  const books = await getCatalogBooks(query, statusFilter);
 
   return (
     <main className="page-shell">

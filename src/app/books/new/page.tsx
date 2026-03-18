@@ -42,7 +42,7 @@ export default async function NewBookPage({ searchParams }: NewBookPageProps) {
     }
   }
 
-  const existingBooks = getBooksByIsbns(lookupResults.map((candidate) => candidate.isbn));
+  const existingBooks = await getBooksByIsbns(lookupResults.map((candidate) => candidate.isbn));
 
   return (
     <main className="page-shell page-shell--create">
@@ -50,7 +50,9 @@ export default async function NewBookPage({ searchParams }: NewBookPageProps) {
         <div>
           <p className="eyebrow">新增图书</p>
           <h1 className="page-title">录入新书</h1>
-          <p className="page-description">可以直接手动录入，也可以先用外部数据快速补全再确认保存。</p>
+          <p className="page-description">
+            可以直接手动录入，也可以先用外部数据快速补全再确认保存。
+          </p>
         </div>
 
         <div className="page-top__actions">
@@ -169,7 +171,9 @@ export default async function NewBookPage({ searchParams }: NewBookPageProps) {
               <BookmarkPlus size={22} />
             </div>
             <h2>录入建议</h2>
-            <p className="section-copy">新增页只处理录入动作，浏览和批量导入都放在各自页面完成。</p>
+            <p className="section-copy">
+              新增页只处理录入动作，浏览和批量导入都放在各自页面完成。
+            </p>
 
             <div className="check-list">
               <div className="check-item">
@@ -193,7 +197,9 @@ export default async function NewBookPage({ searchParams }: NewBookPageProps) {
             <div>
               <p className="eyebrow">填写表单</p>
               <h2>新书资料</h2>
-              <p className="section-copy">把馆藏核心字段一次补齐，后续检索、维护和导入都会更顺手。</p>
+              <p className="section-copy">
+                把馆藏核心字段一次补齐，后续检索、维护和导入都会更顺手。
+              </p>
             </div>
             <span className="chip chip--yellow">
               <PencilRuler size={14} />
