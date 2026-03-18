@@ -6,16 +6,22 @@
 [![React](https://img.shields.io/badge/React-19-149eca?style=flat-square)](https://react.dev/)
 [![SQLite](https://img.shields.io/badge/SQLite-Local-0f6cbd?style=flat-square)](https://www.sqlite.org/)
 [![Turso](https://img.shields.io/badge/Turso-Vercel%20Ready-7c3aed?style=flat-square)](https://turso.tech/)
+[![MySQL](https://img.shields.io/badge/MySQL-8+-1d4ed8?style=flat-square)](https://www.mysql.com/)
 [![License](https://img.shields.io/badge/License-MIT-16a34a?style=flat-square)](./LICENSE)
 
-仓库已经完成 `SQLite 本地开发 + Turso 线上部署` 的双库适配，适合本地快速运行，也适合后续挂到 Vercel 做公开演示。
+这个仓库现在支持三种数据库模式：
+
+- `SQLite`：默认本地开发，开箱即跑
+- `Turso`：适合部署到 Vercel 做公开演示
+- `MySQL`：适合接入本地 MySQL 或远程自建数据库
 
 快速入口：
 
 - [项目截图](#页面预览)
 - [本地启动](#本地启动)
-- [部署说明](./docs/vercel-turso.md)
-- [Vercel 一键部署](https://vercel.com/new/clone?repository-url=https://github.com/nanfangns/nanfang-library-management-system)
+- [环境变量](#环境变量)
+- [MySQL 使用说明](./docs/mysql.md)
+- [Vercel + Turso 部署说明](./docs/vercel-turso.md)
 
 ## 项目简介
 
@@ -64,19 +70,11 @@
 ## 功能亮点
 
 - 清晰页面结构：首页、列表、导入、新增、编辑各归各位
-- 本地响应快：默认直接使用 SQLite 文件数据库
+- 搜索与筛选完善：支持书名、作者、ISBN、分类和状态检索
 - 外部书目补全：接入 Open Library 搜索与预填
-- 现代界面：偏 Google 风格的明亮配色与卡片布局
-- 搜索体验优化：局部加载反馈，不再整页闪烁
-- 移动端可用：导航和主内容已经针对小屏做过调整
+- 三驱动兼容：SQLite、Turso、MySQL 共用同一套业务逻辑
+- 现代界面：明亮配色、卡片布局、移动端可用
 - 适合二开：类型、校验、数据访问和页面职责相对清晰
-
-## 适合谁用
-
-- 想做 `毕业设计 / 毕设` 的同学
-- 想交 `课程设计 / 课程作业 / Web 作业 / 数据库作业` 的同学
-- 想找一个完整一点的 `Next.js CRUD 后台项目` 做参考的人
-- 想做图书馆、馆藏、书目管理类原型系统的人
 
 ## 技术架构
 
@@ -84,8 +82,7 @@
 - `React 19`
 - `TypeScript`
 - `Zod` 表单校验
-- `SQLite` 本地开发数据库
-- `Turso` 线上演示数据库
+- `SQLite / Turso / MySQL` 数据层适配
 - `Open Library API` 外部图书补全
 - `Server Actions` 提交与跳转
 
@@ -97,13 +94,37 @@
 npm install
 ```
 
-### 2. 初始化示例数据
+### 2. 选择数据库模式
+
+默认使用 SQLite，无需额外配置。
+
+如果你想切到 MySQL，可先参考 [MySQL 使用说明](./docs/mysql.md)，至少配置：
+
+```bash
+DATABASE_DRIVER="mysql"
+MYSQL_HOST="127.0.0.1"
+MYSQL_PORT="3306"
+MYSQL_USER="root"
+MYSQL_PASSWORD=""
+MYSQL_DATABASE="nanfang_library"
+MYSQL_SSL="false"
+```
+
+如果你想切到 Turso，则配置：
+
+```bash
+DATABASE_DRIVER="turso"
+DATABASE_URL="libsql://your-db-name-your-org.turso.io"
+DATABASE_AUTH_TOKEN="..."
+```
+
+### 3. 初始化示例数据
 
 ```bash
 npm run db:seed
 ```
 
-### 3. 启动开发服务器
+### 4. 启动开发服务器
 
 ```bash
 npm run dev
@@ -128,51 +149,71 @@ npm run db:reset
 npm run assets:preview
 ```
 
-## 部署说明
-
-如果你要做公开演示，推荐使用：
-
-- Vercel 托管前端与 Next.js 服务
-- Turso 承载线上数据库
-
-详细步骤见：
-
-- [Vercel + Turso 部署说明](./docs/vercel-turso.md)
-
 ## 环境变量
 
 ```bash
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
 DATABASE_DRIVER="sqlite"
 DATABASE_URL=""
 DATABASE_AUTH_TOKEN=""
+
+MYSQL_HOST="127.0.0.1"
+MYSQL_PORT="3306"
+MYSQL_USER="root"
+MYSQL_PASSWORD=""
+MYSQL_DATABASE="nanfang_library"
+MYSQL_SSL="false"
+
 OPEN_LIBRARY_APP_NAME="nanfang-library-management-system"
 OPEN_LIBRARY_CONTACT_EMAIL=""
 ```
 
 说明：
 
-- 本地默认使用 SQLite，所以 `DATABASE_DRIVER` 保持 `sqlite` 即可
-- 部署到 Vercel 时把 `DATABASE_DRIVER` 改成 `turso`
-- `DATABASE_URL` 与 `DATABASE_AUTH_TOKEN` 仅在 Turso 模式下必填
+- `DATABASE_DRIVER` 支持 `sqlite`、`turso`、`mysql`
+- `DATABASE_URL` 与 `DATABASE_AUTH_TOKEN` 只在 `turso` 模式下使用
+- `MYSQL_*` 变量只在 `mysql` 模式下使用
+- `sqlite` 模式下可不填写 `DATABASE_URL`，默认落到 `./data/library.db`
+
+## 数据库模式建议
+
+- 本地快速开发：优先用 `SQLite`
+- Vercel 公开演示：优先用 `Turso`
+- 接学校服务器、云数据库或本地 MySQL：使用 `MySQL`
+
+这三种模式共用同一套页面、Server Actions 和表结构逻辑，切换数据库不会改业务层调用方式。
+
+## 部署说明
+
+- [Vercel + Turso 部署说明](./docs/vercel-turso.md)
+- [MySQL 使用说明](./docs/mysql.md)
 
 ## 常见问题
 
-### 1. 为什么本地还是 SQLite？
+### 1. 为什么默认还是 SQLite？
 
 因为它最适合本地开发、课程作业和毕设答辩演示，开箱即跑，迁移成本也低。
 
-### 2. 为什么线上要换 Turso？
+### 2. 现在可以直接换成 MySQL 吗？
 
-因为 Vercel 不适合长期持久化本地 SQLite 文件，把线上切到 Turso 会更稳。
+可以。把 `DATABASE_DRIVER` 改成 `mysql`，再补齐 `MYSQL_HOST`、`MYSQL_PORT`、`MYSQL_USER`、`MYSQL_PASSWORD`、`MYSQL_DATABASE` 即可。项目会在首次连接时自动检查并补齐表结构。
 
-### 3. 这个项目适合拿去做毕设吗？
+### 3. 原来的 Turso 方案还能继续用吗？
+
+可以。`turso` 模式保留不变，适合继续配合 Vercel 使用。
+
+### 4. 这次改动包含旧数据迁移脚本吗？
+
+没有。本次主要解决三种数据库模式的运行兼容，不额外提供 SQLite/Turso 到 MySQL 的自动迁移脚本。
+
+### 5. 这个项目适合拿去做毕设吗？
 
 适合。它已经覆盖了：
 
 - 多页面业务结构
 - 表单校验
-- 本地数据库 CRUD
+- 数据库 CRUD
 - 外部 API 接入
 - 响应式界面
 - 可部署方案
@@ -184,7 +225,3 @@ OPEN_LIBRARY_CONTACT_EMAIL=""
 - 图书详情页
 - 统计看板
 - 批量导入导出
-
-### 4. 为什么 README 顶部没有直接挂一个公开演示域名？
-
-仓库已经完成了部署适配，但公开演示域名需要你自己的 Vercel/Turso 账号授权后再发布。部署文档已经写好，接上就能用。

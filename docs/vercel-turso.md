@@ -1,6 +1,8 @@
 # Vercel + Turso 部署说明
 
-这个项目已经完成了 `SQLite 本地开发 + Turso 线上部署` 的双库适配，适合本地继续使用文件数据库开发，同时把线上版本部署到 Vercel。
+这个项目现在支持 `SQLite`、`Turso`、`MySQL` 三种数据库模式，这份文档专门说明如何使用 `Turso` 配合 `Vercel` 做线上演示部署。
+
+如果你想接入 MySQL，请看 [MySQL 使用说明](./mysql.md)。
 
 ## 1. 准备 Turso 数据库
 
@@ -29,7 +31,7 @@ OPEN_LIBRARY_APP_NAME="nanfang-library-management-system"
 OPEN_LIBRARY_CONTACT_EMAIL="your-email@example.com"
 ```
 
-如果你只是本地开发，可以继续用默认配置：
+如果你只是本地开发，可以继续使用：
 
 ```bash
 DATABASE_DRIVER="sqlite"

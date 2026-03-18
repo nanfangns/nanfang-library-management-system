@@ -1,4 +1,12 @@
-import { getBookCount, getDatabaseInfo, resetBooks, seedSampleBooks } from "../src/lib/database";
+import "dotenv/config";
+
+import {
+  closeDatabaseRuntime,
+  getBookCount,
+  getDatabaseInfo,
+  resetBooks,
+  seedSampleBooks,
+} from "../src/lib/database";
 
 async function main() {
   await resetBooks();
@@ -10,8 +18,12 @@ async function main() {
   console.log(`当前数据库驱动：${databaseInfo.driver}`);
 }
 
-main().catch((error) => {
-  console.error("重置图书数据失败。");
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error("重置图书数据失败。");
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await closeDatabaseRuntime();
+  });

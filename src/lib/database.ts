@@ -4,7 +4,8 @@ import { dirname, join, resolve } from "node:path";
 import { cwd } from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { createClient, type Client } from "@libsql/client";
+import { createClient, type Client as LibsqlClient } from "@libsql/client";
+import { createPool, type Pool, type RowDataPacket } from "mysql2/promise";
 
 import type {
   BookInput,
@@ -18,11 +19,17 @@ import type {
 
 const DEFAULT_SQLITE_PATH = join(cwd(), "data", "library.db");
 const DEFAULT_SQLITE_URL = pathToFileURL(DEFAULT_SQLITE_PATH).href;
-const COLUMN_MIGRATIONS = [
+const SQLITE_COLUMN_MIGRATIONS = [
   { name: "publisher", definition: "TEXT" },
   { name: "language", definition: "TEXT" },
   { name: "page_count", definition: "INTEGER" },
   { name: "cover_url", definition: "TEXT" },
+] as const;
+const MYSQL_COLUMN_MIGRATIONS = [
+  { name: "publisher", definition: "TEXT NULL" },
+  { name: "language", definition: "TEXT NULL" },
+  { name: "page_count", definition: "INT NULL" },
+  { name: "cover_url", definition: "TEXT NULL" },
 ] as const;
 const SAMPLE_BOOKS: Array<Omit<BookInput, "id">> = [
   {
@@ -86,12 +93,35 @@ const SAMPLE_BOOKS: Array<Omit<BookInput, "id">> = [
     status: "MAINTENANCE",
   },
 ];
-
-type DatabaseDriver = "sqlite" | "turso";
+type DatabaseDriver = "sqlite" | "turso" | "mysql";
+type DatabaseValue = string | number | null;
+type DatabaseStatement =
+  | string
+  | {
+      sql: string;
+      args?: DatabaseValue[];
+    };
+type DatabaseResult = {
+  rows: Array<Record<string, unknown>>;
+};
+type DatabaseExecutor = {
+  execute(statement: DatabaseStatement): Promise<DatabaseResult>;
+};
 type DatabaseRuntime = {
-  client: Client;
+  client: DatabaseExecutor;
+  close(): Promise<void>;
   driver: DatabaseDriver;
+  isDuplicateIsbnError(error: unknown): boolean;
+  modeLabel: string;
   url: string;
+};
+type MysqlConfig = {
+  database: string;
+  host: string;
+  password: string;
+  port: number;
+  ssl: boolean;
+  user: string;
 };
 
 const globalForDatabase = globalThis as unknown as {
@@ -106,10 +136,16 @@ export class DuplicateIsbnError extends Error {
 }
 
 function resolveDriver(): DatabaseDriver {
-  return process.env.DATABASE_DRIVER === "turso" ? "turso" : "sqlite";
+  const driver = process.env.DATABASE_DRIVER?.trim().toLowerCase();
+
+  if (driver === "turso" || driver === "mysql") {
+    return driver;
+  }
+
+  return "sqlite";
 }
 
-function resolveDatabaseUrl(driver: DatabaseDriver) {
+function resolveDatabaseUrl(driver: "sqlite" | "turso") {
   const configuredUrl = process.env.DATABASE_URL?.trim();
 
   if (driver === "turso") {
@@ -127,12 +163,57 @@ function resolveDatabaseUrl(driver: DatabaseDriver) {
   if (
     configuredUrl.startsWith("file:") ||
     configuredUrl.startsWith("libsql:") ||
-    configuredUrl.startsWith("http:")
+    configuredUrl.startsWith("http:") ||
+    configuredUrl.startsWith("https:")
   ) {
     return configuredUrl;
   }
 
   return pathToFileURL(resolve(cwd(), configuredUrl)).href;
+}
+
+function resolveRequiredMysqlSetting(name: "MYSQL_HOST" | "MYSQL_USER" | "MYSQL_DATABASE") {
+  const value = process.env[name]?.trim();
+
+  if (!value) {
+    throw new Error(`${name} is required when DATABASE_DRIVER=mysql.`);
+  }
+
+  return value;
+}
+
+function parseBooleanEnv(name: string) {
+  const value = process.env[name]?.trim().toLowerCase();
+
+  return value === "1" || value === "true" || value === "yes" || value === "on";
+}
+
+function resolveMysqlConfig(): MysqlConfig {
+  const rawPort = process.env.MYSQL_PORT?.trim();
+  let port = 3306;
+
+  if (rawPort) {
+    const parsedPort = Number(rawPort);
+
+    if (!Number.isInteger(parsedPort) || parsedPort <= 0) {
+      throw new Error("MYSQL_PORT must be a positive integer when DATABASE_DRIVER=mysql.");
+    }
+
+    port = parsedPort;
+  }
+
+  return {
+    database: resolveRequiredMysqlSetting("MYSQL_DATABASE"),
+    host: resolveRequiredMysqlSetting("MYSQL_HOST"),
+    password: process.env.MYSQL_PASSWORD ?? "",
+    port,
+    ssl: parseBooleanEnv("MYSQL_SSL"),
+    user: resolveRequiredMysqlSetting("MYSQL_USER"),
+  };
+}
+
+function buildMysqlDisplayUrl(config: MysqlConfig) {
+  return `mysql://${encodeURIComponent(config.user)}@${config.host}:${config.port}/${config.database}`;
 }
 
 function getSqliteFilePath(url: string) {
@@ -159,6 +240,20 @@ function ensureSqliteDirectory(url: string) {
   if (!existsSync(dataDirectory)) {
     mkdirSync(dataDirectory, { recursive: true });
   }
+}
+
+function normalizeStatement(statement: DatabaseStatement) {
+  if (typeof statement === "string") {
+    return {
+      args: [] as DatabaseValue[],
+      sql: statement,
+    };
+  }
+
+  return {
+    args: statement.args ?? [],
+    sql: statement.sql,
+  };
 }
 
 function normalizeOptionalText(value: string | null | undefined) {
@@ -221,21 +316,21 @@ function normalizeRequiredText(value: unknown) {
 
 function mapRawRow(row: Record<string, unknown>): BookRow {
   return {
-    id: normalizeRequiredText(row.id),
-    title: normalizeRequiredText(row.title),
     author: normalizeRequiredText(row.author),
-    isbn: normalizeRequiredText(row.isbn),
     category: normalizeRequiredText(row.category),
+    cover_url: normalizeNullableText(row.cover_url),
+    created_at: normalizeRequiredText(row.created_at),
+    id: normalizeRequiredText(row.id),
+    isbn: normalizeRequiredText(row.isbn),
+    language: normalizeNullableText(row.language),
+    location: normalizeRequiredText(row.location),
+    page_count: normalizeNullableNumber(row.page_count),
     published_year: normalizeNumber(row.published_year),
     publisher: normalizeNullableText(row.publisher),
-    language: normalizeNullableText(row.language),
-    page_count: normalizeNullableNumber(row.page_count),
-    cover_url: normalizeNullableText(row.cover_url),
-    location: normalizeRequiredText(row.location),
     rating: normalizeNumber(row.rating),
-    summary: normalizeNullableText(row.summary),
     status: normalizeRequiredText(row.status) as BookStatus,
-    created_at: normalizeRequiredText(row.created_at),
+    summary: normalizeNullableText(row.summary),
+    title: normalizeRequiredText(row.title),
     updated_at: normalizeRequiredText(row.updated_at),
   };
 }
@@ -244,20 +339,20 @@ function mapRow(row: Record<string, unknown>): CatalogBook {
   const record = mapRawRow(row);
 
   return {
-    id: record.id,
-    title: record.title,
     author: record.author,
-    isbn: record.isbn,
     category: record.category,
+    coverUrl: record.cover_url,
+    id: record.id,
+    isbn: record.isbn,
+    language: record.language,
+    location: record.location,
+    pageCount: record.page_count,
     publishedYear: record.published_year,
     publisher: record.publisher,
-    language: record.language,
-    pageCount: record.page_count,
-    coverUrl: record.cover_url,
-    location: record.location,
     rating: record.rating,
-    summary: record.summary,
     status: record.status,
+    summary: record.summary,
+    title: record.title,
     updatedAt: record.updated_at,
   };
 }
@@ -266,24 +361,28 @@ function mapEditableRow(row: Record<string, unknown>): EditableBook {
   const record = mapRawRow(row);
 
   return {
-    id: record.id,
-    title: record.title,
     author: record.author,
-    isbn: record.isbn,
     category: record.category,
+    coverUrl: record.cover_url,
+    id: record.id,
+    isbn: record.isbn,
+    language: record.language,
+    location: record.location,
+    pageCount: record.page_count,
     publishedYear: record.published_year,
     publisher: record.publisher,
-    language: record.language,
-    pageCount: record.page_count,
-    coverUrl: record.cover_url,
-    location: record.location,
     rating: record.rating,
-    summary: record.summary,
     status: record.status,
+    summary: record.summary,
+    title: record.title,
   };
 }
 
-function isUniqueConstraintError(error: unknown) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isLibsqlDuplicateIsbnError(error: unknown) {
   return (
     error instanceof Error &&
     (error.message.includes("UNIQUE constraint failed: books.isbn") ||
@@ -292,7 +391,66 @@ function isUniqueConstraintError(error: unknown) {
   );
 }
 
-async function runSchema(client: Client) {
+function isMysqlDuplicateIsbnError(error: unknown) {
+  if (!isRecord(error)) {
+    return false;
+  }
+
+  const code = typeof error.code === "string" ? error.code : "";
+  const errno = typeof error.errno === "number" ? error.errno : 0;
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error.sqlMessage === "string"
+        ? error.sqlMessage
+        : "";
+
+  return (
+    code === "ER_DUP_ENTRY" ||
+    errno === 1062 ||
+    message.includes("for key 'uniq_books_isbn'") ||
+    message.includes("for key 'books.isbn'") ||
+    message.includes("Duplicate entry")
+  );
+}
+
+function createLibsqlExecutor(client: LibsqlClient): DatabaseExecutor {
+  return {
+    execute: async (statement) => {
+      const normalizedStatement = normalizeStatement(statement);
+      const result =
+        normalizedStatement.args.length > 0
+          ? await client.execute({
+              args: normalizedStatement.args,
+              sql: normalizedStatement.sql,
+            })
+          : await client.execute(normalizedStatement.sql);
+
+      return {
+        rows: result.rows.map((row) => ({ ...(row as Record<string, unknown>) })),
+      };
+    },
+  };
+}
+
+function createMysqlExecutor(pool: Pool): DatabaseExecutor {
+  return {
+    execute: async (statement) => {
+      const normalizedStatement = normalizeStatement(statement);
+      const [rows] = await pool.execute(normalizedStatement.sql, normalizedStatement.args);
+
+      if (!Array.isArray(rows)) {
+        return { rows: [] };
+      }
+
+      return {
+        rows: rows.map((row) => ({ ...(row as RowDataPacket) })),
+      };
+    },
+  };
+}
+
+async function runLibsqlSchema(client: DatabaseExecutor) {
   await client.execute(`
     CREATE TABLE IF NOT EXISTS books (
       id TEXT PRIMARY KEY,
@@ -318,15 +476,85 @@ async function runSchema(client: Client) {
     columnResult.rows.map((row) => normalizeRequiredText((row as Record<string, unknown>).name)),
   );
 
-  for (const column of COLUMN_MIGRATIONS) {
+  for (const column of SQLITE_COLUMN_MIGRATIONS) {
     if (!existingColumns.has(column.name)) {
       await client.execute(`ALTER TABLE books ADD COLUMN ${column.name} ${column.definition}`);
     }
   }
 }
 
-async function createDatabaseRuntime(): Promise<DatabaseRuntime> {
-  const driver = resolveDriver();
+async function ensureMysqlIndexes(client: DatabaseExecutor) {
+  const indexResult = await client.execute("SHOW INDEX FROM books");
+
+  const hasUniqueIsbnIndex = indexResult.rows.some((row) => {
+    const record = row as Record<string, unknown>;
+    return (
+      normalizeRequiredText(record.Column_name ?? record.column_name) === "isbn" &&
+      normalizeNumber(record.Non_unique ?? record.non_unique) === 0
+    );
+  });
+  const hasStatusIndex = indexResult.rows.some((row) => {
+    const record = row as Record<string, unknown>;
+    return normalizeRequiredText(record.Column_name ?? record.column_name) === "status";
+  });
+  const hasUpdatedAtIndex = indexResult.rows.some((row) => {
+    const record = row as Record<string, unknown>;
+    return normalizeRequiredText(record.Column_name ?? record.column_name) === "updated_at";
+  });
+
+  if (!hasUniqueIsbnIndex) {
+    await client.execute("CREATE UNIQUE INDEX uniq_books_isbn ON books(isbn)");
+  }
+
+  if (!hasStatusIndex) {
+    await client.execute("CREATE INDEX idx_books_status ON books(status)");
+  }
+
+  if (!hasUpdatedAtIndex) {
+    await client.execute("CREATE INDEX idx_books_updated_at ON books(updated_at)");
+  }
+}
+
+async function runMysqlSchema(client: DatabaseExecutor) {
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS books (
+      id VARCHAR(36) NOT NULL,
+      title TEXT NOT NULL,
+      author TEXT NOT NULL,
+      isbn VARCHAR(255) NOT NULL,
+      category TEXT NOT NULL,
+      published_year INT NOT NULL,
+      location VARCHAR(255) NOT NULL,
+      rating INT NOT NULL DEFAULT 4,
+      summary TEXT NULL,
+      status ENUM('AVAILABLE', 'BORROWED', 'MAINTENANCE') NOT NULL,
+      created_at VARCHAR(40) NOT NULL,
+      updated_at VARCHAR(40) NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_books_isbn (isbn),
+      KEY idx_books_status (status),
+      KEY idx_books_updated_at (updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  const columnResult = await client.execute("SHOW COLUMNS FROM books");
+  const existingColumns = new Set(
+    columnResult.rows.map((row) => {
+      const record = row as Record<string, unknown>;
+      return normalizeRequiredText(record.Field ?? record.field);
+    }),
+  );
+
+  for (const column of MYSQL_COLUMN_MIGRATIONS) {
+    if (!existingColumns.has(column.name)) {
+      await client.execute(`ALTER TABLE books ADD COLUMN ${column.name} ${column.definition}`);
+    }
+  }
+
+  await ensureMysqlIndexes(client);
+}
+
+async function createLibsqlRuntime(driver: "sqlite" | "turso"): Promise<DatabaseRuntime> {
   const url = resolveDatabaseUrl(driver);
 
   if (driver === "sqlite") {
@@ -334,17 +562,58 @@ async function createDatabaseRuntime(): Promise<DatabaseRuntime> {
   }
 
   const client = createClient({
-    url,
     authToken: driver === "turso" ? process.env.DATABASE_AUTH_TOKEN?.trim() : undefined,
+    url,
   });
+  const executor = createLibsqlExecutor(client);
 
-  await runSchema(client);
+  await runLibsqlSchema(executor);
 
   return {
-    client,
+    client: executor,
+    close: async () => {},
     driver,
+    isDuplicateIsbnError: isLibsqlDuplicateIsbnError,
+    modeLabel: driver === "turso" ? "Turso remote database" : "SQLite local database",
     url,
   };
+}
+
+async function createMysqlRuntime(): Promise<DatabaseRuntime> {
+  const config = resolveMysqlConfig();
+  const pool = createPool({
+    database: config.database,
+    host: config.host,
+    password: config.password,
+    port: config.port,
+    ssl: config.ssl ? {} : undefined,
+    user: config.user,
+    waitForConnections: true,
+  });
+  const executor = createMysqlExecutor(pool);
+
+  await runMysqlSchema(executor);
+
+  return {
+    client: executor,
+    close: async () => {
+      await pool.end();
+    },
+    driver: "mysql",
+    isDuplicateIsbnError: isMysqlDuplicateIsbnError,
+    modeLabel: "MySQL database",
+    url: buildMysqlDisplayUrl(config),
+  };
+}
+
+async function createDatabaseRuntime(): Promise<DatabaseRuntime> {
+  const driver = resolveDriver();
+
+  if (driver === "mysql") {
+    return createMysqlRuntime();
+  }
+
+  return createLibsqlRuntime(driver);
 }
 
 function getDatabaseRuntimePromise() {
@@ -361,13 +630,30 @@ async function getDatabaseRuntime() {
   return getDatabaseRuntimePromise();
 }
 
+export async function closeDatabaseRuntime() {
+  const runtimePromise = globalForDatabase.databaseRuntimePromise;
+
+  if (!runtimePromise) {
+    return;
+  }
+
+  globalForDatabase.databaseRuntimePromise = undefined;
+
+  try {
+    const runtime = await runtimePromise;
+    await runtime.close();
+  } catch {
+    // Ignore startup failures while cleaning up script-owned runtimes.
+  }
+}
+
 export async function getDatabaseInfo() {
   const runtime = await getDatabaseRuntime();
 
   return {
     driver: runtime.driver,
+    modeLabel: runtime.modeLabel,
     url: runtime.url,
-    modeLabel: runtime.driver === "turso" ? "Turso 远程数据库" : "SQLite 本地数据库",
   };
 }
 
@@ -393,7 +679,7 @@ const selectColumns = `
 export async function getCatalogBooks(query: string, status: BookStatus | "ALL") {
   const { client } = await getDatabaseRuntime();
   const clauses: string[] = [];
-  const args: Array<string | number | null> = [];
+  const args: DatabaseValue[] = [];
 
   if (query) {
     const likeValue = `%${query}%`;
@@ -501,27 +787,41 @@ export async function getBookStats(): Promise<BookStats> {
   ]);
 
   return {
-    totalBooks: normalizeNumber((totalResult.rows[0] as Record<string, unknown> | undefined)?.count),
+    averageRating:
+      normalizeNullableNumber((averageResult.rows[0] as Record<string, unknown> | undefined)?.value) ??
+      0,
     availableBooks: normalizeNumber(
       (availableResult.rows[0] as Record<string, unknown> | undefined)?.count,
     ),
     borrowedBooks: normalizeNumber(
       (borrowedResult.rows[0] as Record<string, unknown> | undefined)?.count,
     ),
-    averageRating:
-      normalizeNullableNumber((averageResult.rows[0] as Record<string, unknown> | undefined)?.value) ??
-      0,
+    totalBooks: normalizeNumber((totalResult.rows[0] as Record<string, unknown> | undefined)?.count),
+  };
+}
+
+function normalizeBookInput(input: BookInput) {
+  return {
+    author: input.author,
+    category: input.category,
+    coverUrl: normalizeOptionalText(input.coverUrl),
+    language: normalizeOptionalText(input.language),
+    location: input.location,
+    pageCount: typeof input.pageCount === "number" ? input.pageCount : null,
+    publishedYear: input.publishedYear,
+    publisher: normalizeOptionalText(input.publisher),
+    rating: input.rating,
+    status: input.status,
+    summary: input.summary?.trim() ? input.summary.trim() : null,
+    title: input.title,
   };
 }
 
 export async function saveBook(input: BookInput) {
-  const { client } = await getDatabaseRuntime();
+  const runtime = await getDatabaseRuntime();
+  const { client } = runtime;
   const now = new Date().toISOString();
-  const publisher = normalizeOptionalText(input.publisher);
-  const language = normalizeOptionalText(input.language);
-  const coverUrl = normalizeOptionalText(input.coverUrl);
-  const summary = input.summary?.trim() ? input.summary.trim() : null;
-  const pageCount = typeof input.pageCount === "number" ? input.pageCount : null;
+  const normalizedInput = normalizeBookInput(input);
 
   try {
     if (input.id) {
@@ -546,19 +846,19 @@ export async function saveBook(input: BookInput) {
           WHERE id = ?
         `,
         args: [
-          input.title,
-          input.author,
+          normalizedInput.title,
+          normalizedInput.author,
           input.isbn,
-          input.category,
-          input.publishedYear,
-          publisher,
-          language,
-          pageCount,
-          coverUrl,
-          input.location,
-          input.rating,
-          summary,
-          input.status,
+          normalizedInput.category,
+          normalizedInput.publishedYear,
+          normalizedInput.publisher,
+          normalizedInput.language,
+          normalizedInput.pageCount,
+          normalizedInput.coverUrl,
+          normalizedInput.location,
+          normalizedInput.rating,
+          normalizedInput.summary,
+          normalizedInput.status,
           now,
           input.id,
         ],
@@ -592,19 +892,19 @@ export async function saveBook(input: BookInput) {
       `,
       args: [
         id,
-        input.title,
-        input.author,
+        normalizedInput.title,
+        normalizedInput.author,
         input.isbn,
-        input.category,
-        input.publishedYear,
-        publisher,
-        language,
-        pageCount,
-        coverUrl,
-        input.location,
-        input.rating,
-        summary,
-        input.status,
+        normalizedInput.category,
+        normalizedInput.publishedYear,
+        normalizedInput.publisher,
+        normalizedInput.language,
+        normalizedInput.pageCount,
+        normalizedInput.coverUrl,
+        normalizedInput.location,
+        normalizedInput.rating,
+        normalizedInput.summary,
+        normalizedInput.status,
         now,
         now,
       ],
@@ -612,7 +912,7 @@ export async function saveBook(input: BookInput) {
 
     return id;
   } catch (error) {
-    if (isUniqueConstraintError(error)) {
+    if (runtime.isDuplicateIsbnError(error)) {
       throw new DuplicateIsbnError();
     }
 
@@ -643,49 +943,56 @@ export async function resetBooks() {
 }
 
 export async function seedSampleBooks() {
-  const { client } = await getDatabaseRuntime();
+  const runtime = await getDatabaseRuntime();
+  const { client } = runtime;
   const now = new Date().toISOString();
 
   for (const book of SAMPLE_BOOKS) {
-    await client.execute({
-      sql: `
-        INSERT OR IGNORE INTO books (
-          id,
-          title,
-          author,
-          isbn,
-          category,
-          published_year,
-          publisher,
-          language,
-          page_count,
-          cover_url,
-          location,
-          rating,
-          summary,
-          status,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      args: [
-        randomUUID(),
-        book.title,
-        book.author,
-        book.isbn,
-        book.category,
-        book.publishedYear,
-        book.publisher ?? null,
-        book.language ?? null,
-        book.pageCount ?? null,
-        book.coverUrl ?? null,
-        book.location,
-        book.rating,
-        book.summary ?? null,
-        book.status,
-        now,
-        now,
-      ],
-    });
+    try {
+      await client.execute({
+        sql: `
+          INSERT INTO books (
+            id,
+            title,
+            author,
+            isbn,
+            category,
+            published_year,
+            publisher,
+            language,
+            page_count,
+            cover_url,
+            location,
+            rating,
+            summary,
+            status,
+            created_at,
+            updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        args: [
+          randomUUID(),
+          book.title,
+          book.author,
+          book.isbn,
+          book.category,
+          book.publishedYear,
+          book.publisher ?? null,
+          book.language ?? null,
+          book.pageCount ?? null,
+          book.coverUrl ?? null,
+          book.location,
+          book.rating,
+          book.summary ?? null,
+          book.status,
+          now,
+          now,
+        ],
+      });
+    } catch (error) {
+      if (!runtime.isDuplicateIsbnError(error)) {
+        throw error;
+      }
+    }
   }
 }

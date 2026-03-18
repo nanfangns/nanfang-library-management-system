@@ -1,4 +1,6 @@
-import { getBookCount, getDatabaseInfo } from "../src/lib/database";
+import "dotenv/config";
+
+import { closeDatabaseRuntime, getBookCount, getDatabaseInfo } from "../src/lib/database";
 
 async function main() {
   const [count, databaseInfo] = await Promise.all([getBookCount(), getDatabaseInfo()]);
@@ -8,8 +10,12 @@ async function main() {
   console.log(`当前数据库地址：${databaseInfo.url}`);
 }
 
-main().catch((error) => {
-  console.error("数据库初始化检查失败。");
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error("数据库初始化检查失败。");
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await closeDatabaseRuntime();
+  });

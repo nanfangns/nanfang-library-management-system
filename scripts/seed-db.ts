@@ -1,4 +1,11 @@
-import { getBookCount, getDatabaseInfo, seedSampleBooks } from "../src/lib/database";
+import "dotenv/config";
+
+import {
+  closeDatabaseRuntime,
+  getBookCount,
+  getDatabaseInfo,
+  seedSampleBooks,
+} from "../src/lib/database";
 
 async function main() {
   await seedSampleBooks();
@@ -9,8 +16,12 @@ async function main() {
   console.log(`当前数据库驱动：${databaseInfo.driver}`);
 }
 
-main().catch((error) => {
-  console.error("写入示例图书数据失败。");
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error("写入示例图书数据失败。");
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await closeDatabaseRuntime();
+  });
