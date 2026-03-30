@@ -110,6 +110,12 @@ MYSQL_DATABASE="nanfang_library"
 MYSQL_SSL="false"
 ```
 
+注意：
+
+- 当 `DATABASE_DRIVER="mysql"` 时，本地或远程 MySQL 必须处于可连接状态
+- 如果 MySQL 没有启动，`npm run dev` 进程本身可能还能起来，但访问首页、图书列表、成员、借阅等依赖数据库的页面时会报 `connect ECONNREFUSED`
+- 只想本地快速跑通演示时，建议先改回 `DATABASE_DRIVER="sqlite"`
+
 如果你想切到 Turso，则配置：
 
 ```bash
@@ -198,6 +204,8 @@ OPEN_LIBRARY_CONTACT_EMAIL=""
 ### 2. 现在可以直接换成 MySQL 吗？
 
 可以。把 `DATABASE_DRIVER` 改成 `mysql`，再补齐 `MYSQL_HOST`、`MYSQL_PORT`、`MYSQL_USER`、`MYSQL_PASSWORD`、`MYSQL_DATABASE` 即可。项目会在首次连接时自动检查并补齐表结构。
+
+补充一点：如果当前配置已经是 `mysql`，但你的电脑没有启动 MySQL 服务，那么页面请求会失败。想先在本地直接跑起来，改回 `sqlite` 会更省事。
 
 ### 3. 原来的 Turso 方案还能继续用吗？
 

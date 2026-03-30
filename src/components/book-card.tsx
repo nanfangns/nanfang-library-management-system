@@ -41,6 +41,10 @@ export function BookCard({ book }: { book: CatalogBook }) {
         </div>
 
         <div className="book-actions">
+          <Link className="secondary-button" href={`/books/${book.id}`}>
+            详情
+          </Link>
+
           <Link className="ghost-button" href={`/books/${book.id}/edit`}>
             <PencilLine size={16} />
             编辑

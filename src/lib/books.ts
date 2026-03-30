@@ -99,6 +99,24 @@ export function getStatusMeta(status: BookStatus) {
   );
 }
 
+export function getBookFormStatusOptions(currentStatus?: BookStatus) {
+  const editableOptions = BOOK_STATUS_OPTIONS.filter((option) => option.value !== "BORROWED");
+
+  if (currentStatus === "BORROWED") {
+    return [
+      {
+        description: "当前有未归还借阅，状态由系统自动维护",
+        disabled: true,
+        label: "借出中（系统维护）",
+        value: "BORROWED" as const,
+      },
+      ...editableOptions.map((option) => ({ ...option, disabled: false })),
+    ];
+  }
+
+  return editableOptions.map((option) => ({ ...option, disabled: false }));
+}
+
 export function getNoticeMessage(notice: string | undefined) {
   switch (notice) {
     case "created":
@@ -107,6 +125,8 @@ export function getNoticeMessage(notice: string | undefined) {
       return "图书信息已经更新。";
     case "deleted":
       return "图书记录已删除。";
+    case "delete-blocked":
+      return "这本书还有未归还借阅，暂时不能删除。";
     default:
       return null;
   }

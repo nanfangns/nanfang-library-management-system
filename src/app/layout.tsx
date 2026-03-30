@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
 
 import { SiteHeader } from "@/components/site-header";
 
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-ui",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
@@ -50,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={manrope.variable} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <div className="site-frame">
           <SiteHeader />
           {children}

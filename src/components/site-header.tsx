@@ -10,6 +10,14 @@ function isActive(pathname: string, href: string) {
     return pathname === "/";
   }
 
+  if (href === "/members") {
+    return pathname === "/members" || pathname.startsWith("/members/");
+  }
+
+  if (href === "/loans") {
+    return pathname === "/loans";
+  }
+
   if (href === "/books/import") {
     return pathname === "/books/import";
   }
@@ -36,6 +44,8 @@ export function SiteHeader() {
   const items = [
     { href: "/", label: "首页" },
     { href: "/books", label: "图书列表" },
+    { href: "/members", label: "成员" },
+    { href: "/loans", label: "借阅" },
     { href: "/books/import", label: "导入图书" },
     { href: "/books/new", label: "新增图书" },
   ] as const;

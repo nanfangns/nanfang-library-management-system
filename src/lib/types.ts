@@ -1,6 +1,8 @@
 export const BOOK_STATUS_VALUES = ["AVAILABLE", "BORROWED", "MAINTENANCE"] as const;
+export const MEMBER_STATUS_VALUES = ["ACTIVE", "INACTIVE"] as const;
 
 export type BookStatus = (typeof BOOK_STATUS_VALUES)[number];
+export type MemberStatus = (typeof MEMBER_STATUS_VALUES)[number];
 
 export type BookFormField =
   | "title"
@@ -20,6 +22,12 @@ export type BookFormField =
 
 export type BookFormState = {
   errors?: Partial<Record<BookFormField, string[]>>;
+};
+
+export type MemberFormField = "name" | "memberCode" | "phone" | "email" | "status" | "form";
+
+export type MemberFormState = {
+  errors?: Partial<Record<MemberFormField, string[]>>;
 };
 
 export type BookMetadata = {
@@ -44,10 +52,15 @@ export type BookInput = {
 
 export type EditableBook = Omit<BookInput, keyof BookMetadata | "summary"> &
   BookMetadata & {
-  summary: string | null;
-};
+    summary: string | null;
+  };
 
 export type CatalogBook = EditableBook & {
+  updatedAt: string;
+};
+
+export type DetailedBook = EditableBook & {
+  createdAt: string;
   updatedAt: string;
 };
 
@@ -78,7 +91,101 @@ export type BookStats = {
   totalBooks: number;
   availableBooks: number;
   borrowedBooks: number;
+  maintenanceBooks: number;
   averageRating: number;
+};
+
+export type MemberInput = {
+  id?: string;
+  name: string;
+  memberCode: string;
+  phone?: string | null;
+  email?: string | null;
+  status: MemberStatus;
+};
+
+export type EditableMember = {
+  id: string;
+  name: string;
+  memberCode: string;
+  phone: string | null;
+  email: string | null;
+  status: MemberStatus;
+};
+
+export type MemberFormValues = Partial<Omit<EditableMember, "id">> & {
+  id?: string;
+};
+
+export type Member = EditableMember & {
+  createdAt: string;
+  updatedAt: string;
+  activeLoanCount: number;
+};
+
+export type MemberRow = {
+  id: string;
+  name: string;
+  member_code: string;
+  phone: string | null;
+  email: string | null;
+  status: MemberStatus;
+  created_at: string;
+  updated_at: string;
+  active_loan_count?: number;
+};
+
+export type Loan = {
+  id: string;
+  bookId: string;
+  memberId: string;
+  borrowedAt: string;
+  dueAt: string;
+  returnedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  bookTitle: string;
+  bookIsbn: string;
+  bookStatus: BookStatus;
+  memberName: string;
+  memberCode: string;
+  isOverdue: boolean;
+};
+
+export type LoanRow = {
+  id: string;
+  book_id: string;
+  member_id: string;
+  borrowed_at: string;
+  due_at: string;
+  returned_at: string | null;
+  notes: string | null;
+  active_book_id: string | null;
+  created_at: string;
+  updated_at: string;
+  book_title: string;
+  book_isbn: string;
+  book_status: BookStatus;
+  member_name: string;
+  member_code: string;
+};
+
+export type DashboardStats = {
+  totalBooks: number;
+  availableBooks: number;
+  borrowedBooks: number;
+  maintenanceBooks: number;
+  activeLoans: number;
+  overdueLoans: number;
+  activeMembers: number;
+  recentBooks: CatalogBook[];
+};
+
+export type BookDetailView = {
+  book: DetailedBook;
+  currentLoan: Loan | null;
+  loanHistory: Loan[];
 };
 
 export type ExistingBookMatch = {

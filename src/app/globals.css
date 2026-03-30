@@ -12,7 +12,8 @@
   --radius-xl: 32px;
   --radius-lg: 24px;
   --radius-md: 18px;
-  --font-body: var(--font-ui), "Segoe UI", sans-serif;
+  --font-body: "Aptos", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    sans-serif;
 }
 
 * {
@@ -817,6 +818,11 @@ button {
   background: rgba(251, 188, 4, 0.2);
 }
 
+.status-badge--green {
+  color: #1d6f34;
+  background: rgba(52, 168, 83, 0.16);
+}
+
 .meta-chip {
   color: var(--muted);
   background: #ffffff;
@@ -1103,6 +1109,135 @@ button {
   font-size: 0.9rem;
 }
 
+.dashboard-grid,
+.dashboard-secondary-grid,
+.dashboard-highlight-list,
+.dashboard-recent-list,
+.detail-hero__identity,
+.detail-hero__copy,
+.detail-loan-panel {
+  display: grid;
+}
+
+.dashboard-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.dashboard-secondary-grid {
+  grid-template-columns: minmax(300px, 0.7fr) minmax(0, 1.3fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.dashboard-card {
+  gap: 14px;
+}
+
+.dashboard-card__icon,
+.detail-book-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+}
+
+.dashboard-card__icon--blue {
+  background: linear-gradient(135deg, var(--blue), #82aef8);
+}
+
+.dashboard-card__icon--green {
+  background: linear-gradient(135deg, var(--green), #6fd28f);
+}
+
+.dashboard-card__icon--red {
+  background: linear-gradient(135deg, var(--red), #f07d72);
+}
+
+.dashboard-card__icon--yellow {
+  background: linear-gradient(135deg, #f1a300, var(--yellow));
+}
+
+.dashboard-card__value {
+  font-size: 2.2rem;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-panel {
+  gap: 18px;
+}
+
+.dashboard-highlight-list,
+.dashboard-recent-list,
+.detail-loan-panel {
+  gap: 14px;
+}
+
+.dashboard-recent-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(217, 226, 241, 0.84);
+}
+
+.dashboard-recent-item strong,
+.detail-hero__copy h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: -0.03em;
+}
+
+.detail-hero {
+  margin-bottom: 20px;
+}
+
+.detail-hero__identity {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.detail-hero__copy {
+  gap: 16px;
+}
+
+.detail-book-cover {
+  width: 176px;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid rgba(217, 226, 241, 0.9);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 36px rgba(59, 72, 99, 0.14);
+}
+
+.detail-book-avatar {
+  width: 176px;
+  height: 176px;
+  border-radius: 32px;
+  font-size: 3rem;
+}
+
+.detail-layout {
+  margin-bottom: 20px;
+}
+
+.detail-empty {
+  margin-top: 0;
+  padding: 20px;
+}
+
+.member-card,
+.loan-card {
+  align-content: start;
+}
+
 .empty-state,
 .not-found-card {
   display: grid;
@@ -1251,6 +1386,9 @@ button {
   .create-intro-grid--paired,
   .editor-layout--create,
   .editor-layout--edit,
+  .dashboard-grid,
+  .dashboard-secondary-grid,
+  .detail-hero__identity,
   .loading-grid,
   .books-grid {
     grid-template-columns: 1fr;
@@ -1325,6 +1463,7 @@ button {
   .book-card__top,
   .book-card__footer,
   .book-card__identity,
+  .dashboard-recent-item,
   .external-book-card__main,
   .external-book-card__footer,
   .editor-actions,
@@ -1369,6 +1508,12 @@ button {
     max-width: 180px;
     height: auto;
     aspect-ratio: 3 / 4;
+  }
+
+  .detail-book-cover,
+  .detail-book-avatar {
+    width: 100%;
+    max-width: 220px;
   }
 }
 

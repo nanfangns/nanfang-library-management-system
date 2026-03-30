@@ -1,4 +1,4 @@
-import { BOOK_STATUS_OPTIONS } from "@/lib/books";
+import { getBookFormStatusOptions } from "@/lib/books";
 import type { BookFormField, BookFormState, BookFormValues } from "@/lib/types";
 
 function getFieldError(
@@ -15,6 +15,8 @@ export function BookFormFields({
   book: BookFormValues | null;
   errors?: BookFormState["errors"];
 }) {
+  const statusOptions = getBookFormStatusOptions(book?.status);
+
   return (
     <div className="field-grid">
       <label className="field">
@@ -124,9 +126,9 @@ export function BookFormFields({
 
       <label className="field">
         <span className="field__label">状态</span>
-        <select defaultValue={book?.status ?? BOOK_STATUS_OPTIONS[0].value} name="status">
-          {BOOK_STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+        <select defaultValue={book?.status ?? "AVAILABLE"} name="status">
+          {statusOptions.map((option) => (
+            <option disabled={option.disabled} key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}

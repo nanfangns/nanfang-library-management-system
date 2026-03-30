@@ -5,7 +5,7 @@ export default function NotFound() {
     <main className="page-shell page-shell--narrow">
       <section className="panel not-found-card">
         <p className="eyebrow">404</p>
-        <h1 className="page-title">没有找到这本书</h1>
+        <h1 className="page-title">没有找到这个页面</h1>
         <p className="page-description">它可能已经被删除，或者这个地址本身就是无效的。</p>
         <div className="welcome-actions">
           <Link className="primary-button" href="/books">
